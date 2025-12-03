@@ -1,0 +1,3 @@
+{
+  "/api/enrich-iocs/route": "app/api/enrich-iocs/route.js"
+}

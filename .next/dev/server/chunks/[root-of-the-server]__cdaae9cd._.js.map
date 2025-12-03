@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/HP/Downloads/threat-intel-report-generatorv2/app/api/analyze-urls/route.js"],"sourcesContent":["// app/api/analyze-urls/route.ts\r\nimport { NextRequest, NextResponse } from \"next/server\";\r\n\r\nexport async function POST(req) {\r\n  const { urls } = await req.json();\r\n\r\n  const res = await fetch(\"http://localhost:8888/analyze-urls\", {\r\n    method: \"POST\",\r\n    headers: {\r\n      \"Content-Type\": \"application/json\",\r\n      Authorization: `Bearer ${process.env.JWT_AUTH}`, // safe: server-side\r\n    },\r\n    body: JSON.stringify({ urls }),\r\n  });\r\n\r\n  const data = await res.json();\r\n  return NextResponse.json(data, { status: res.status });\r\n}\r\n"],"names":[],"mappings":"AAAA,gCAAgC;;;;;AAChC;;AAEO,eAAe,KAAK,GAAG;IAC5B,MAAM,EAAE,IAAI,EAAE,GAAG,MAAM,IAAI,IAAI;IAE/B,MAAM,MAAM,MAAM,MAAM,sCAAsC;QAC5D,QAAQ;QACR,SAAS;YACP,gBAAgB;YAChB,eAAe,CAAC,OAAO,EAAE,QAAQ,GAAG,CAAC,QAAQ,EAAE;QACjD;QACA,MAAM,KAAK,SAAS,CAAC;YAAE;QAAK;IAC9B;IAEA,MAAM,OAAO,MAAM,IAAI,IAAI;IAC3B,OAAO,gJAAY,CAAC,IAAI,CAAC,MAAM;QAAE,QAAQ,IAAI,MAAM;IAAC;AACtD"}}]
+}
