@@ -130,8 +130,8 @@ function SummaryTab({ ioc }) {
             {ioc.threat_intel.targeted_countries
               .flat()
               .filter(Boolean)
-              .map((country) => (
-                <SimpleBadge key={country} variant="outline" className="text-xs">
+              .map((country, index) => (
+                <SimpleBadge key={index} variant="outline" className="text-xs">
                   {country}
                 </SimpleBadge>
               ))}

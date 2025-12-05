@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function Home() {
   useEffect(() => {
-    /*
+    
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark")
@@ -19,7 +19,6 @@ export default function Home() {
       document.documentElement.classList.remove("dark")
     }
 
-    */
       
   }, [])
 
@@ -116,6 +115,20 @@ export default function Home() {
       if (useMockData) {
         await new Promise((resolve) => setTimeout(resolve, 2000))
         enrichedResponse = getMockEnrichmentResponse(selectedIOCs)
+
+        const updatedIOCs = iocs.map((ioc) => {
+          const enriched = enrichedResponse.find((e) => e.value === ioc.value)
+          return enriched || ioc
+        })
+
+        setIocs(updatedIOCs)
+        toast({
+          title: "Enrichment Complete",
+          description: `${selectedIOCs.length} IOCs enriched`,
+          variant: "default",
+        });
+
+
       } else {
         const response = await fetch("/api/enrich-iocs", {
           method: "POST",
@@ -131,19 +144,21 @@ export default function Home() {
         if (!enrichedResponse.success || !enrichedResponse.data) throw new Error(`Enrichment failed: ${response.statusText}`)
         console.log(`server response from enrich iocs :`)
         console.log(enrichedResponse)
+
+        const updatedIOCs = iocs.map((ioc) => {
+          const enriched = enrichedResponse.data?.find((e) => e.value === ioc.value)
+          return enriched || ioc
+        })
+
+        setIocs(updatedIOCs)
+        toast({
+          title: "Enrichment Complete",
+          description: `${selectedIOCs.length} IOCs enriched`,
+          variant: "default",
+        });
       }
 
-      const updatedIOCs = iocs.map((ioc) => {
-        const enriched = enrichedResponse.data?.find((e) => e.value === ioc.value)
-        return enriched || ioc
-      })
 
-      setIocs(updatedIOCs)
-      toast({
-        title: "Enrichment Complete",
-        description: `${selectedIOCs.length} IOCs enriched`,
-        variant: "default",
-      })
     } catch (error) {
       console.error("Enrichment error:", error)
       toast({
