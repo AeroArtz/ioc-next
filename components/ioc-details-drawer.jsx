@@ -94,7 +94,7 @@ function SummaryTab({ ioc }) {
         </div>
       </div>
 
-      {ioc.scoring && (
+      { (["md5", "sha1", "sha256"].includes(ioc.type)) && (
         <div className="border border-border rounded-lg p-4 space-y-2">
           <h4 className="font-semibold text-sm">Hash Details</h4>
           <div className="text-sm space-y-1">

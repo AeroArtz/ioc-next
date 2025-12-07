@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { EnrichmentTools } from "./enrichment-tools"
 
 const RISK_COLORS = {
-  CRITICAL : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", 
+  CRITICAL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   HIGH: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   MEDIUM: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   LOW: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -26,16 +26,46 @@ const STATUS_COLORS = {
   Enriched: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 }
 
-export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEnrich, loading }) {
+export function IOCDashboard({
+  iocs,
+  selectedIOC,
+  onSelectIOC,
+  onRemoveIOC,
+  onEnrich,
+  loading,
+  selectedForEnrichment = [],
+  onEnrichmentSelectionChange,
+}) {
   const [selectedTools, setSelectedTools] = useState(["virustotal", "abuseipdb", "shodan", "alienvault", "ipinfo"])
 
   const handleEnrichClick = () => {
-    if (iocs.length === 0) return
+    if (selectedForEnrichment.length === 0) {
+      alert("Please select at least one IOC to enrich")
+      return
+    }
     if (selectedTools.length === 0) {
       alert("Please select at least one enrichment tool")
       return
     }
-    onEnrich(iocs, selectedTools)
+    onEnrich(selectedForEnrichment, selectedTools)
+  }
+
+  const handleCheckboxChange = (iocValue, isChecked) => {
+    let newSelection
+    if (isChecked) {
+      newSelection = [...selectedForEnrichment, iocValue]
+    } else {
+      newSelection = selectedForEnrichment.filter((val) => val !== iocValue)
+    }
+    onEnrichmentSelectionChange(newSelection)
+  }
+
+  const handleSelectAll = (isChecked) => {
+    if (isChecked) {
+      onEnrichmentSelectionChange(iocs.map((ioc) => ioc.value))
+    } else {
+      onEnrichmentSelectionChange([])
+    }
   }
 
   const isEnriched = (ioc) => {
@@ -57,7 +87,7 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
           onToolsChange={setSelectedTools}
           onEnrich={handleEnrichClick}
           loading={loading}
-          selectedCount={iocs.length}
+          selectedCount={selectedForEnrichment.length}
         />
       )}
 
@@ -71,6 +101,15 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
             <table className="w-full text-sm">
               <thead className="bg-muted border-b border-border sticky top-0">
                 <tr>
+                  <th className="px-4 py-3 text-center font-semibold w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedForEnrichment.length === iocs.length && iocs.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                      title="Select all IOCs for enrichment"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold w-1/3">IOC Value</th>
                   <th className="px-4 py-3 text-left font-semibold w-24">Type</th>
                   {iocs.some((ioc) => isEnriched(ioc)) && (
@@ -94,6 +133,7 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
                   const malwareFamilies = ioc.threat_intel?.malware_families || []
                   const riskLevel = ioc.scoring?.risk_level || "UNKNOWN"
                   const score = ioc.scoring?.current_score || 0
+                  const isSelected = selectedForEnrichment.includes(ioc.value)
 
                   return (
                     <tr
@@ -101,6 +141,18 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
                       onClick={() => onSelectIOC(ioc)}
                       className="hover:bg-muted/50 transition-colors cursor-pointer"
                     >
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleCheckboxChange(ioc.value, e.target.checked)
+                          }}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </td>
+
                       <td className="px-4 py-3">
                         <div className="font-mono text-xs break-all max-w-xs text-foreground">
                           {ioc.value.length > 60 ? `${ioc.value.substring(0, 60)}...` : ioc.value}
@@ -113,14 +165,10 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
                         </Badge>
                       </td>
 
-                 
-
                       {enriched && (
                         <>
                           <td className="px-4 py-3">
-                            <Badge className={`${RISK_COLORS[riskLevel]} text-xs font-semibold`}>
-                              {riskLevel}
-                            </Badge>
+                            <Badge className={`${RISK_COLORS[riskLevel]} text-xs font-semibold`}>{riskLevel}</Badge>
                           </td>
 
                           <td className="px-4 py-3 text-center font-semibold text-foreground">{score.toFixed(1)}</td>
@@ -171,7 +219,7 @@ export function IOCDashboard({ iocs, selectedIOC, onSelectIOC, onRemoveIOC, onEn
                         </>
                       )}
 
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">
                           {enriched && (
                             <Button

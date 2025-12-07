@@ -11,21 +11,19 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function Home() {
   useEffect(() => {
-    
     const savedTheme = localStorage.getItem("theme")
     if (savedTheme === "dark") {
       document.documentElement.classList.add("dark")
     } else {
       document.documentElement.classList.remove("dark")
     }
-
-      
   }, [])
 
   const [report, setReport] = useState("")
   const [iocs, setIocs] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedIOC, setSelectedIOC] = useState(null)
+  const [selectedForEnrichment, setSelectedForEnrichment] = useState([])
   const [filters, setFilters] = useState({
     type: [],
     riskLevel: [],
@@ -69,7 +67,7 @@ export default function Home() {
       } else {
         response = await fetch("/api/analyze-urls", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ urls: urls.split(",").map((u) => u.trim()) }),
@@ -84,6 +82,7 @@ export default function Home() {
 
       setReport(response.report || "")
       setIocs(response.iocs || [])
+      setSelectedForEnrichment([])
       toast({
         title: "Analysis Complete",
         description: `Extracted ${response.iocs?.length || 0} IOCs`,
@@ -101,11 +100,6 @@ export default function Home() {
     }
   }
 
-  const handleRemoveIOC = (value) => {
-    setIocs((prev) => prev.filter((ioc) => ioc.value !== value))
-    if (selectedIOC?.value === value) setSelectedIOC(null)
-  }
-
   const handleEnrichIOCs = async (selectedIOCs, selectedTools) => {
     setLoading(true)
     try {
@@ -114,7 +108,8 @@ export default function Home() {
       let enrichedResponse
       if (useMockData) {
         await new Promise((resolve) => setTimeout(resolve, 2000))
-        enrichedResponse = getMockEnrichmentResponse(selectedIOCs)
+        const selectedIOCObjects = iocs.filter((ioc) => selectedIOCs.includes(ioc.value))
+        enrichedResponse = getMockEnrichmentResponse(selectedIOCObjects)
 
         const updatedIOCs = iocs.map((ioc) => {
           const enriched = enrichedResponse.find((e) => e.value === ioc.value)
@@ -126,22 +121,23 @@ export default function Home() {
           title: "Enrichment Complete",
           description: `${selectedIOCs.length} IOCs enriched`,
           variant: "default",
-        });
-
-
+        })
       } else {
+        const selectedIOCObjects = iocs.filter((ioc) => selectedIOCs.includes(ioc.value))
+
         const response = await fetch("/api/enrich-iocs", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ iocs: selectedIOCs, options: selectedTools }),
+          body: JSON.stringify({ iocs: selectedIOCObjects, options: selectedTools }),
         })
 
         if (!response.ok) throw new Error(`Enrichment failed: ${response.statusText}`)
         enrichedResponse = await response.json()
 
-        if (!enrichedResponse.success || !enrichedResponse.data) throw new Error(`Enrichment failed: ${response.statusText}`)
+        if (!enrichedResponse.success || !enrichedResponse.data)
+          throw new Error(`Enrichment failed: ${response.statusText}`)
         console.log(`server response from enrich iocs :`)
         console.log(enrichedResponse)
 
@@ -155,10 +151,8 @@ export default function Home() {
           title: "Enrichment Complete",
           description: `${selectedIOCs.length} IOCs enriched`,
           variant: "default",
-        });
+        })
       }
-
-
     } catch (error) {
       console.error("Enrichment error:", error)
       toast({
@@ -169,6 +163,12 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRemoveIOC = (value) => {
+    setIocs((prev) => prev.filter((ioc) => ioc.value !== value))
+    if (selectedIOC?.value === value) setSelectedIOC(null)
+    setSelectedForEnrichment((prev) => prev.filter((v) => v !== value))
   }
 
   return (
@@ -192,6 +192,8 @@ export default function Home() {
               onRemoveIOC={handleRemoveIOC}
               onEnrich={handleEnrichIOCs}
               loading={loading}
+              selectedForEnrichment={selectedForEnrichment}
+              onEnrichmentSelectionChange={setSelectedForEnrichment}
             />
 
             {/* Report Viewer */}
@@ -202,7 +204,6 @@ export default function Home() {
 
       {/* IOC Details Drawer */}
       {selectedIOC && <IOCDetailsDrawer ioc={selectedIOC} onClose={() => setSelectedIOC(null)} />}
-
 
       <Toaster />
     </div>
