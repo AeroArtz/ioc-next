@@ -487,6 +487,9 @@ function getMockEnrichmentResponse(iocs) {
       },
       results: {
         virustotal: {
+          sha1: "8645a75947729d80223557409ae6ae4703429b1b",
+          sha256: "8fdd2e21665d2e93fd2090a860a67ed1f2572fb5b94d0cf7ea6bc699f05e17c2",
+          md5: "ba25573c5629cbc81c717e2810ea5afc",
           malicious: 22,
           suspicious: 0,
           harmless: 0,

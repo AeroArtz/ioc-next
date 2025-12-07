@@ -96,6 +96,26 @@ function SummaryTab({ ioc }) {
 
       {ioc.scoring && (
         <div className="border border-border rounded-lg p-4 space-y-2">
+          <h4 className="font-semibold text-sm">Hash Details</h4>
+          <div className="text-sm space-y-1">
+            <div className="flex">
+              <span className="text-muted-foreground">MD5:</span>
+              <span className="pl-5">{ioc.results?.virustotal?.md5 || ""}</span>
+            </div>
+            <div className="flex">
+              <span className="text-muted-foreground">SHA1:</span>
+              <span className="pl-5">{ioc.results?.virustotal?.sha1 || ""}</span>
+            </div>
+            <div className="flex">
+              <span className="text-muted-foreground">SHA256:</span>
+              <span className="pl-5">{ioc.results?.virustotal?.sha256 || ""}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ioc.scoring && (
+        <div className="border border-border rounded-lg p-4 space-y-2">
           <h4 className="font-semibold text-sm">Scoring Details</h4>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
