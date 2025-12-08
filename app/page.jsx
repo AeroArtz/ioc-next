@@ -314,25 +314,7 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
         </div>
       )}
 
-      {/* Score Range */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">
-          Score Range: {filters.scoreRange[0]} - {filters.scoreRange[1]}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={filters.scoreRange[1]}
-          onChange={(e) => {
-            onFiltersChange({
-              ...filters,
-              scoreRange: [filters.scoreRange[0], Number.parseInt(e.target.value)],
-            })
-          }}
-          className="w-full"
-        />
-      </div>
+  
     </div>
   )
 }
