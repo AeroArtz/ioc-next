@@ -1,6 +1,16 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { Loader2, Zap } from "lucide-react"
+import {
+  Loader2,
+  Zap,
+  Shield,
+  AlertTriangle,
+  Search,
+  AtSign as Alien,
+  Globe,
+  ScanSearch,
+  Biohazard,
+} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,11 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const TOOLS = [
-  { id: "virustotal", label: "VirusTotal", icon: "🦠" },
-  { id: "abuseipdb", label: "AbuseIPDB", icon: "⚠️" },
-  { id: "shodan", label: "Shodan", icon: "🔍" },
-  { id: "alienvault", label: "AlienVault OTX", icon: "👽" },
-  { id: "ipinfo", label: "IPInfo", icon: "🌍" },
+  { id: "virustotal", label: "VirusTotal", icon: Biohazard },
+  { id: "abuseipdb", label: "AbuseIPDB", icon: AlertTriangle },
+  { id: "shodan", label: "Shodan", icon: Search },
+  { id: "alienvault", label: "AlienVault OTX", icon: Alien },
+  { id: "ipinfo", label: "IPInfo", icon: Globe },
+  { id: "urlscan", label: "Urlscan.io", icon: ScanSearch },
+  { id: "threatfox", label: "ThreatFox", icon: Shield },
 ]
 
 export function EnrichmentTools({ selectedTools, onToolsChange, onEnrich, loading, selectedCount }) {
@@ -33,12 +45,13 @@ export function EnrichmentTools({ selectedTools, onToolsChange, onEnrich, loadin
             ) : (
               selectedTools.map((toolId) => {
                 const tool = TOOLS.find((t) => t.id === toolId)
+                const IconComponent = tool.icon
                 return (
                   <div
                     key={toolId}
-                    className="bg-primary/10 text-primary text-xs px-3 py-1 rounded-full flex items-center gap-1"
+                    className="bg-primary/10 text-primary text-xs px-3 py-1 rounded-full flex items-center gap-1.5"
                   >
-                    <span>{tool.icon}</span>
+                    <IconComponent className="w-3.5 h-3.5" />
                     <span>{tool.label}</span>
                   </div>
                 )
@@ -56,16 +69,19 @@ export function EnrichmentTools({ selectedTools, onToolsChange, onEnrich, loadin
           <DropdownMenuContent className="w-56">
             <p className="px-2 py-1.5 text-sm font-semibold">Enrichment Tools</p>
             <DropdownMenuSeparator />
-            {TOOLS.map((tool) => (
-              <DropdownMenuCheckboxItem
-                key={tool.id}
-                checked={selectedTools.includes(tool.id)}
-                onCheckedChange={() => handleToolToggle(tool.id)}
-              >
-                <span className="mr-2">{tool.icon}</span>
-                {tool.label}
-              </DropdownMenuCheckboxItem>
-            ))}
+            {TOOLS.map((tool) => {
+              const IconComponent = tool.icon
+              return (
+                <DropdownMenuCheckboxItem
+                  key={tool.id}
+                  checked={selectedTools.includes(tool.id)}
+                  onCheckedChange={() => handleToolToggle(tool.id)}
+                >
+                  <IconComponent className="w-4 h-4 mr-2" />
+                  {tool.label}
+                </DropdownMenuCheckboxItem>
+              )
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
 

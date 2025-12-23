@@ -94,7 +94,7 @@ function SummaryTab({ ioc }) {
         </div>
       </div>
 
-      { (["md5", "sha1", "sha256"].includes(ioc.type)) && (
+      {["md5", "sha1", "sha256"].includes(ioc.type) && (
         <div className="border border-border rounded-lg p-4 space-y-2">
           <h4 className="font-semibold text-sm">Hash Details</h4>
           <div className="text-sm space-y-1">
@@ -110,6 +110,19 @@ function SummaryTab({ ioc }) {
               <span className="text-muted-foreground">SHA256:</span>
               <span className="pl-5">{ioc.results?.virustotal?.sha256 || ""}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {["md5", "sha1", "sha256"].includes(ioc.type) && (
+        <div className="border border-border rounded-lg p-4 space-y-2">
+          <h4 className="font-semibold text-sm">File type</h4>
+          <div className="text-sm space-y-1">
+            <div className="flex">
+              <span className="text-muted-foreground">extension:</span>
+              <span className="pl-5">{ioc.results?.virustotal?.type || ""}</span>
+            </div>
+
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EnrichmentTools } from "./enrichment-tools"
+import { Bug, Shield, Download } from "lucide-react"
 
 const RISK_COLORS = {
   CRITICAL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -36,7 +37,53 @@ export function IOCDashboard({
   selectedForEnrichment = [],
   onEnrichmentSelectionChange,
 }) {
-  const [selectedTools, setSelectedTools] = useState(["virustotal", "abuseipdb", "shodan", "alienvault", "ipinfo"])
+  const [selectedTools, setSelectedTools] = useState([
+    "virustotal",
+    "abuseipdb",
+    "shodan",
+    "alienvault",
+    "ipinfo",
+    "urlscan",
+    "threatfox",
+  ])
+
+  const handleDownloadCSV = () => {
+    // Create CSV header
+    const headers = ["IOC Value", "Type", "Risk Level", "Score", "APT Groups", "Malware"]
+
+    // Create CSV rows
+    const rows = iocs.map((ioc) => {
+      const enriched = isEnriched(ioc)
+
+      const aptGroups =
+        enriched && ioc.threat_intel?.apt_groups?.length > 0 ? ioc.threat_intel.apt_groups.join(", ") : ""
+      const malwareFamilies =
+        enriched && ioc.threat_intel?.malware_families?.length > 0 ? ioc.threat_intel.malware_families.join(", ") : ""
+
+      return [
+        `"${ioc.value}"`, // IOC Value
+        ioc.type.toUpperCase(), // Type
+        enriched ? ioc.scoring?.risk_level || "" : "", // Risk Level
+        enriched ? ioc.scoring?.current_score?.toFixed(1) || "" : "", // Score
+        `"${aptGroups}"`, // APT Groups - quoted to handle commas in CSV
+        `"${malwareFamilies}"`, // Malware - quoted to handle commas in CSV
+      ].join(",")
+    })
+
+    // Combine header and rows
+    const csvContent = [headers.join(","), ...rows].join("\n")
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", `ioc-analysis-${new Date().toISOString().split("T")[0]}.csv`)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleEnrichClick = () => {
     if (selectedForEnrichment.length === 0) {
@@ -76,8 +123,21 @@ export function IOCDashboard({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">IOC Analysis Dashboard</h2>
-        <div className="text-sm text-muted-foreground">
-          {iocs.length} IOC{iocs.length !== 1 ? "s" : ""} found
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-muted-foreground">
+            {iocs.length} IOC{iocs.length !== 1 ? "s" : ""} found
+          </div>
+          {iocs.length > 0 && (
+            <Button
+              onClick={handleDownloadCSV}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+            >
+              <Download className="w-4 h-4" />
+              Download CSV
+            </Button>
+          )}
         </div>
       </div>
 
@@ -114,11 +174,8 @@ export function IOCDashboard({
                   <th className="px-4 py-3 text-left font-semibold w-24">Type</th>
                   {iocs.some((ioc) => isEnriched(ioc)) && (
                     <>
-                      <th className="px-4 py-3 text-left font-semibold w-20">Risk</th>
                       <th className="px-4 py-3 text-center font-semibold w-20">Score</th>
-                      <th className="px-4 py-3 text-left font-semibold flex-1">APT Groups</th>
-                      <th className="px-4 py-3 text-left font-semibold flex-1">Malware</th>
-                      <th className="px-4 py-3 text-center font-semibold w-20">Reports</th>
+                      <th className="px-4 py-3 text-left font-semibold flex-1">Associations</th>
                     </>
                   )}
                   <th className="px-4 py-3 text-center font-semibold w-32">Actions</th>
@@ -127,9 +184,7 @@ export function IOCDashboard({
               <tbody className="divide-y divide-border">
                 {iocs.map((ioc) => {
                   const enriched = isEnriched(ioc)
-                  const vtMalicious = ioc.results?.virustotal?.malicious || 0
-                  const avCount = ioc.results?.alienvault?.data?.count || 0
-                  const aptGroup = ioc.threat_intel?.apt_groups?.[0]
+                  const aptGroups = ioc.threat_intel?.apt_groups || []
                   const malwareFamilies = ioc.threat_intel?.malware_families || []
                   const riskLevel = ioc.scoring?.risk_level || "UNKNOWN"
                   const score = ioc.scoring?.current_score || 0
@@ -167,53 +222,67 @@ export function IOCDashboard({
 
                       {enriched && (
                         <>
-                          <td className="px-4 py-3">
-                            <Badge className={`${RISK_COLORS[riskLevel]} text-xs font-semibold`}>{riskLevel}</Badge>
-                          </td>
-
-                          <td className="px-4 py-3 text-center font-semibold text-foreground">{score.toFixed(1)}</td>
-
-                          <td className="px-4 py-3">
-                            {aptGroup ? (
-                              <div className="flex items-center gap-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  {aptGroup}
-                                </Badge>
-                                {ioc.threat_intel?.apt_groups?.length > 1 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{ioc.threat_intel.apt_groups.length - 1}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">-</span>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3">
-                            {malwareFamilies.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {malwareFamilies.slice(0, 2).map((family) => (
-                                  <Badge key={family} variant="outline" className="text-xs">
-                                    {family}
-                                  </Badge>
-                                ))}
-                                {malwareFamilies.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{malwareFamilies.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">-</span>
-                            )}
-                          </td>
-
                           <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-2 text-xs">
-                              <span className="font-semibold text-red-600">{vtMalicious}</span>
-                              <span className="text-muted-foreground">/</span>
-                              <span className="font-semibold text-blue-600">{avCount}</span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-lg font-bold text-foreground">{score.toFixed(1)}</span>
+                              <Badge className={`${RISK_COLORS[riskLevel]} text-[10px] px-1.5 py-0`}>{riskLevel}</Badge>
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <div className="space-y-2">
+                              {/* APT Groups Section */}
+                              {aptGroups.length > 0 && (
+                                <div className="flex items-start gap-1.5">
+                                  <Shield className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {aptGroups.slice(0, 2).map((group) => (
+                                      <Badge
+                                        key={group}
+                                        className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs"
+                                      >
+                                        {group}
+                                      </Badge>
+                                    ))}
+                                    {aptGroups.length > 2 && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs bg-red-50 text-red-700 dark:bg-red-950"
+                                      >
+                                        +{aptGroups.length - 2}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Malware Families Section */}
+                              {malwareFamilies.length > 0 && (
+                                <div className="flex items-start gap-1.5">
+                                  <Bug className="w-3.5 h-3.5 text-orange-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {malwareFamilies.slice(0, 2).map((family) => (
+                                      <Badge
+                                        key={family}
+                                        variant="outline"
+                                        className="text-xs border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
+                                      >
+                                        {family}
+                                      </Badge>
+                                    ))}
+                                    {malwareFamilies.length > 2 && (
+                                      <Badge variant="outline" className="text-xs text-orange-600">
+                                        +{malwareFamilies.length - 2}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* No associations */}
+                              {aptGroups.length === 0 && malwareFamilies.length === 0 && (
+                                <span className="text-xs text-muted-foreground italic">No associations</span>
+                              )}
                             </div>
                           </td>
                         </>

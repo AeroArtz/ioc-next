@@ -5,18 +5,15 @@ import { URLAnalyzerSection } from "@/components/url-analyzer-section"
 import { IOCDashboard } from "@/components/ioc-dashboard"
 import { IOCDetailsDrawer } from "@/components/ioc-details-drawer"
 import { ReportViewer } from "@/components/report-viewer"
+import { Navbar } from "@/components/navbar"
 // import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Home() {
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
+    document.documentElement.classList.add("dark")
+    
   }, [])
 
   const [report, setReport] = useState("")
@@ -100,6 +97,8 @@ export default function Home() {
     }
   }
 
+
+
   const handleEnrichIOCs = async (selectedIOCs, selectedTools) => {
     setLoading(true)
     try {
@@ -173,6 +172,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar/>
+      
       <URLAnalyzerSection onAnalyze={handleAnalyzeURLs} loading={loading} />
 
       <div className="container mx-auto px-4 py-8">
@@ -360,8 +361,8 @@ function getMockEnrichmentResponse(iocs) {
       value: "103.246.147.17",
       type: "ipv4",
       scoring: {
-        current_score: 34.76,
-        base_score: 42.45263157894737,
+        current_score: 3.72,
+        base_score: 7.258620689655172,
         hours_since_seen: 7.64,
         risk_level: "MEDIUM",
       },
@@ -414,10 +415,10 @@ function getMockEnrichmentResponse(iocs) {
       value: "http://belaysolutions.link",
       type: "url",
       scoring: {
-        current_score: 0,
-        base_score: 32.39795918367347,
+        current_score: 0.0,
+        base_score: 6.5,
         hours_since_seen: 546.59,
-        risk_level: "LOW",
+        risk_level: "INFORMATIONAL",
       },
       threat_intel: {
         apt_groups: [],
@@ -449,10 +450,10 @@ function getMockEnrichmentResponse(iocs) {
       value: "ba25573c5629cbc81c717e2810ea5afc",
       type: "md5",
       scoring: {
-        current_score: 60.46,
-        base_score: 60.460317460317455,
+        current_score: 9.31,
+        base_score: 9.31081081081081,
         hours_since_seen: 7.65,
-        risk_level: "HIGH",
+        risk_level: "CRITICAL",
       },
       threat_intel: {
         apt_groups: ["Water Gamayun"],
@@ -488,8 +489,8 @@ function getMockEnrichmentResponse(iocs) {
       value: "admin.zscloud.net",
       type: "domain",
       scoring: {
-        current_score: 18.0,
-        base_score: 18.0,
+        current_score: 0,
+        base_score: 0,
         risk_level: "INFORMATIONAL",
       },
       threat_intel: {
