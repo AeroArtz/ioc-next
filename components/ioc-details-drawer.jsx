@@ -128,6 +128,20 @@ function SummaryTab({ ioc }) {
         </div>
       )}
 
+
+      {(ioc.results?.abuseipdb?.isp) && (
+        <div className="border border-border rounded-lg p-4 space-y-2">
+          <h4 className="font-semibold text-sm">ISP</h4>
+          <div className="text-sm space-y-1">
+            <div className="flex">
+              <span className="text-muted-foreground">isp:</span>
+              <span className="pl-5">{ioc.results?.abuseipdb?.isp || ""}</span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       { ioc.results?.alienvault?.pdns_count && (
         <div className="border border-border rounded-lg p-4 space-y-2">
           <h4 className="font-semibold text-sm">Pdns Count</h4>
