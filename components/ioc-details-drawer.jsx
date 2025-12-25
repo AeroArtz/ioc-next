@@ -12,6 +12,7 @@ const RISK_COLORS = {
 }
 
 export function IOCDetailsDrawer({ ioc, onClose }) {
+  console.log(`ioc data : ${ioc.results.virustotal.signature_info}`)
   const [activeTab, setActiveTab] = useState("summary")
   const [expandedCampaigns, setExpandedCampaigns] = useState({})
 
@@ -121,6 +122,19 @@ function SummaryTab({ ioc }) {
             <div className="flex">
               <span className="text-muted-foreground">extension:</span>
               <span className="pl-5">{ioc.results?.virustotal?.type || ""}</span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      { ioc.results?.alienvault?.pdns_count && (
+        <div className="border border-border rounded-lg p-4 space-y-2">
+          <h4 className="font-semibold text-sm">Pdns Count</h4>
+          <div className="text-sm space-y-1">
+            <div className="flex">
+              <span className="text-muted-foreground">count:</span>
+              <span className="pl-5">{ioc.results?.alienvault?.pdns_count || ""}</span>
             </div>
 
           </div>
@@ -332,6 +346,103 @@ function ReputationTab({ ioc }) {
           ) : (
             <p className="text-xs text-muted-foreground">Data available</p>
           )}
+        </div>
+      )}
+
+      {( ["md5", "sha1", "sha256"].includes(ioc.type) && results?.virustotal?.signature_info?.verified == "Signed") && (
+        <div className="border border-border rounded-lg p-4">
+          <h4 className="font-semibold text-sm mb-3">Signature info</h4>
+          <div className="space-y-2 text-sm">
+            {results?.virustotal?.signature_info?.verified && (
+              <div className="flex">
+                <span className="text-muted-foreground">Signature verification:</span>
+                <span className="pl-5">✅ {results?.virustotal?.signature_info?.verified}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.copyright && (
+              <div className="flex">
+                <span className="text-muted-foreground">Copyright:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.copyright}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.product && (
+              <div className="flex">
+                <span className="text-muted-foreground">Product:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.product}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.description && (
+              <div className="flex">
+                <span className="text-muted-foreground">Description:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.description}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signers && (
+              <div className="flex">
+                <span className="text-muted-foreground">Signers:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signers}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signing_date && (
+              <div className="flex">
+                <span className="text-muted-foreground">Date signed:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signing_date}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {( ["md5", "sha1", "sha256"].includes(ioc.type) && results?.virustotal?.signature_info?.verified == "Revoked") && (
+        <div className="border border-border rounded-lg p-4">
+          <h4 className="font-semibold text-sm mb-3">Signature info</h4>
+          <div className="space-y-2 text-sm">
+            {results?.virustotal?.signature_info?.verified && (
+              <div className="flex">
+                <span className="text-muted-foreground">Signature verification:</span>
+                <span className="pl-5">❗{results?.virustotal?.signature_info?.verified}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signers_details?.name && (
+              <div className="flex">
+                <span className="text-muted-foreground">Signer name:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signers_details?.name}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signers_details && (
+              <div className="flex">
+                <span className="text-muted-foreground">Cert issuer:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signers_details["cert issuer"]}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signers_details && (
+              <div className="flex">
+                <span className="text-muted-foreground">Valid from:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signers_details["valid from"]}</span>
+              </div>
+            )}
+            {results?.virustotal?.signature_info?.signers_details && (
+              <div className="flex">
+                <span className="text-muted-foreground">Valid to:</span>
+                <span className="pl-5">{results?.virustotal?.signature_info?.signers_details["valid to"]}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {( ["md5", "sha1", "sha256"].includes(ioc.type) && (Object.entries(results?.virustotal?.signature_info).length === 0) ) && (
+        <div className="border border-border rounded-lg p-4">
+          <h4 className="font-semibold text-sm mb-3">Signature info</h4>
+          <div className="space-y-2 text-sm">
+            {Object.entries(results?.virustotal?.signature_info).length === 0 && (
+              <div className="flex">
+                <span className="text-muted-foreground">Signature verification:</span>
+                <span className="pl-5">❗Not Signed</span>
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 

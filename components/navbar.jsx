@@ -26,7 +26,7 @@ export function Navbar() {
               href="/adhoc"
               className="text-sm font-medium transition-colors"
             >
-              Adhoc Enrichment
+              IOC Enrichment
             </Link>
 
           </div>

@@ -6,17 +6,16 @@ import { IOCDashboard } from "@/components/ioc-dashboard"
 import { IOCDetailsDrawer } from "@/components/ioc-details-drawer"
 import { ReportViewer } from "@/components/report-viewer"
 import { Navbar } from "@/components/navbar"
-// import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Home() {
   useEffect(() => {
     document.documentElement.classList.add("dark")
-    
   }, [])
 
-  const [report, setReport] = useState("")
+  const [report, setReport] = useState(null)
+  const [arabic_report, setArabicReport] = useState(null)
   const [iocs, setIocs] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedIOC, setSelectedIOC] = useState(null)
@@ -55,34 +54,27 @@ export default function Home() {
   const handleAnalyzeURLs = async (urls) => {
     setLoading(true)
     try {
-      const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+      const response = await fetch("/api/analyze-urls", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ urls: urls.split(",").map((u) => u.trim()) }),
+      })
 
-      let response
-      if (useMockData) {
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        response = getMockAnalysisResponse()
-      } else {
-        response = await fetch("/api/analyze-urls", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ urls: urls.split(",").map((u) => u.trim()) }),
-        })
+      if (!response.ok) throw new Error(`API error: ${response.statusText}`)
+      const data = await response.json()
 
-        if (!response.ok) throw new Error(`API error: ${response.statusText}`)
-        response = await response.json()
+      console.log(`server response from analyze-urls:`, data)
 
-        console.log(`server response from analyze-urls :`)
-        console.log(response)
-      }
+      setReport(data.report || null)
+      setArabicReport(data.arabic_report || null)
 
-      setReport(response.report || "")
-      setIocs(response.iocs || [])
+      setIocs(data.iocs || [])
       setSelectedForEnrichment([])
       toast({
         title: "Analysis Complete",
-        description: `Extracted ${response.iocs?.length || 0} IOCs`,
+        description: `Extracted ${data.iocs?.length || 0} IOCs`,
         variant: "default",
       })
     } catch (error) {
@@ -97,61 +89,37 @@ export default function Home() {
     }
   }
 
-
-
   const handleEnrichIOCs = async (selectedIOCs, selectedTools) => {
     setLoading(true)
     try {
-      const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+      const selectedIOCObjects = iocs.filter((ioc) => selectedIOCs.includes(ioc.value))
 
-      let enrichedResponse
-      if (useMockData) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        const selectedIOCObjects = iocs.filter((ioc) => selectedIOCs.includes(ioc.value))
-        enrichedResponse = getMockEnrichmentResponse(selectedIOCObjects)
+      const response = await fetch("/api/enrich-iocs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ iocs: selectedIOCObjects, options: selectedTools }),
+      })
 
-        const updatedIOCs = iocs.map((ioc) => {
-          const enriched = enrichedResponse.find((e) => e.value === ioc.value)
-          return enriched || ioc
-        })
+      if (!response.ok) throw new Error(`Enrichment failed: ${response.statusText}`)
+      const enrichedResponse = await response.json()
 
-        setIocs(updatedIOCs)
-        toast({
-          title: "Enrichment Complete",
-          description: `${selectedIOCs.length} IOCs enriched`,
-          variant: "default",
-        })
-      } else {
-        const selectedIOCObjects = iocs.filter((ioc) => selectedIOCs.includes(ioc.value))
+      if (!enrichedResponse.success || !enrichedResponse.data)
+        throw new Error(`Enrichment failed: ${response.statusText}`)
+      console.log(`server response from enrich iocs:`, enrichedResponse)
 
-        const response = await fetch("/api/enrich-iocs", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ iocs: selectedIOCObjects, options: selectedTools }),
-        })
+      const updatedIOCs = iocs.map((ioc) => {
+        const enriched = enrichedResponse.data?.find((e) => e.value === ioc.value)
+        return enriched || ioc
+      })
 
-        if (!response.ok) throw new Error(`Enrichment failed: ${response.statusText}`)
-        enrichedResponse = await response.json()
-
-        if (!enrichedResponse.success || !enrichedResponse.data)
-          throw new Error(`Enrichment failed: ${response.statusText}`)
-        console.log(`server response from enrich iocs :`)
-        console.log(enrichedResponse)
-
-        const updatedIOCs = iocs.map((ioc) => {
-          const enriched = enrichedResponse.data?.find((e) => e.value === ioc.value)
-          return enriched || ioc
-        })
-
-        setIocs(updatedIOCs)
-        toast({
-          title: "Enrichment Complete",
-          description: `${selectedIOCs.length} IOCs enriched`,
-          variant: "default",
-        })
-      }
+      setIocs(updatedIOCs)
+      toast({
+        title: "Enrichment Complete",
+        description: `${selectedIOCs.length} IOCs enriched`,
+        variant: "default",
+      })
     } catch (error) {
       console.error("Enrichment error:", error)
       toast({
@@ -172,20 +140,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar/>
-      
+      <Navbar />
+
       <URLAnalyzerSection onAnalyze={handleAnalyzeURLs} loading={loading} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left: Filters Sidebar */}
           <div className="lg:col-span-1">
             <FiltersPanel iocs={iocs} filters={filters} onFiltersChange={setFilters} />
           </div>
 
-          {/* Right: IOC Dashboard + Report */}
           <div className="lg:col-span-3 flex flex-col gap-6">
-            {/* IOC Table (Dashboard Style) */}
             <IOCDashboard
               iocs={filteredIOCs}
               selectedIOC={selectedIOC}
@@ -197,13 +162,11 @@ export default function Home() {
               onEnrichmentSelectionChange={setSelectedForEnrichment}
             />
 
-            {/* Report Viewer */}
-            {report && <ReportViewer report={report} onReportChange={setReport} />}
+            {report && <ReportViewer report={report} arabic_report={arabic_report} onReportChange={setReport} />}
           </div>
         </div>
       </div>
 
-      {/* IOC Details Drawer */}
       {selectedIOC && <IOCDetailsDrawer ioc={selectedIOC} onClose={() => setSelectedIOC(null)} />}
 
       <Toaster />
@@ -221,7 +184,6 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
     <div className="border border-border rounded-lg p-4 bg-card space-y-4">
       <h3 className="font-semibold text-foreground">Filters</h3>
 
-      {/* Type Filter */}
       <div className="space-y-2">
         <label className="text-sm font-medium">IOC Type</label>
         <div className="space-y-1">
@@ -242,7 +204,6 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
         </div>
       </div>
 
-      {/* Risk Level Filter */}
       <div className="space-y-2">
         <label className="text-sm font-medium">Risk Level</label>
         <div className="space-y-1">
@@ -265,7 +226,6 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
         </div>
       </div>
 
-      {/* APT Groups Filter */}
       {allAPTGroups.length > 0 && (
         <div className="space-y-2">
           <label className="text-sm font-medium">APT Groups</label>
@@ -290,7 +250,6 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
         </div>
       )}
 
-      {/* Malware Families Filter */}
       {allMalwareFamilies.length > 0 && (
         <div className="space-y-2">
           <label className="text-sm font-medium">Malware Families</label>
@@ -314,206 +273,6 @@ function FiltersPanel({ iocs, filters, onFiltersChange }) {
           </div>
         </div>
       )}
-
-  
     </div>
   )
-}
-
-function getMockAnalysisResponse() {
-  return {
-    report: `Water Gamayun APT Activity Report
-
-Date: November 28, 2025
-
-Executive Summary:
-This report addresses activity attributed to the Water Gamayun APT group. The threat actor has been observed targeting multiple sectors with sophisticated attack techniques.
-
-Technical Analysis:
-Water Gamayun employs advanced evasion techniques and multi-stage payload delivery mechanisms. The group demonstrates knowledge of defense evasion and privilege escalation methods.
-
-Key Findings:
-- Primary targeting: Financial and technology sectors
-- Attack vector: Phishing with credential harvesting
-- Malware families: RAR-based downloaders, executables
-- Infrastructure: Compromised domains and IP ranges
-
-Recommendations:
-1. Implement advanced email filtering and link analysis
-2. Deploy behavioral analysis tools for process monitoring
-3. Conduct immediate threat hunting on identified infrastructure
-4. Review logs for suspicious RDP and lateral movement activity
-
-Reference Links:
-- https://www.zscaler.com/blogs/security-research/water-gamayun-apt`,
-    iocs: [
-      { value: "103.246.147.17", type: "ipv4" },
-      { value: "http://belaysolutions.link", type: "url" },
-      { value: "ba25573c5629cbc81c717e2810ea5afc", type: "md5" },
-      { value: "admin.zscloud.net", type: "domain" },
-    ],
-  }
-}
-
-function getMockEnrichmentResponse(iocs) {
-  const enrichmentMap = {
-    "103.246.147.17": {
-      value: "103.246.147.17",
-      type: "ipv4",
-      scoring: {
-        current_score: 3.72,
-        base_score: 7.258620689655172,
-        hours_since_seen: 7.64,
-        risk_level: "MEDIUM",
-      },
-      threat_intel: {
-        apt_groups: ["Water Gamayun"],
-        malware_families: ["Silentprism", "Darkwisp", "Rhadamanthys"],
-        campaigns: [
-          {
-            name: "Water APT Multi-Stage Attack Uncovered",
-            description: "Multi-stage attack with RAR payloads and PowerShell injection",
-            tags: ["msc eviltwin", "cve-2025-26633"],
-            created: "2025-11-26T00:43:16",
-            modified: "2025-11-26T07:13:58",
-          },
-        ],
-        industries_targeted: ["Technology", "Government"],
-        targeted_countries: [["Russian Federation"]],
-      },
-      results: {
-        virustotal: {
-          malicious: 10,
-          suspicious: 2,
-          harmless: 55,
-          asn: 211381,
-          as_owner: "Podaon SIA",
-          last_analysis_date: 1764365192,
-        },
-        abuseipdb: {
-          abuseScore: 0,
-          usageType: "Data Center/Web Hosting/Transit",
-          isp: "Podaon SIA",
-          totalReports: 1,
-          countryCode: "NL",
-        },
-        alienvault: {
-          data: { count: 3 },
-        },
-        shodan: {
-          error: "Access denied (403 Forbidden)",
-        },
-        ipinfo: {
-          city: "Oude Meer",
-          country: "NL",
-          org: "AS211381 Podaon SIA",
-          loc: "52.2883,4.7861",
-        },
-      },
-    },
-    "http://belaysolutions.link": {
-      value: "http://belaysolutions.link",
-      type: "url",
-      scoring: {
-        current_score: 0.0,
-        base_score: 6.5,
-        hours_since_seen: 546.59,
-        risk_level: "INFORMATIONAL",
-      },
-      threat_intel: {
-        apt_groups: [],
-        malware_families: [],
-        campaigns: [
-          {
-            name: "Twitter Feed - skocherhan",
-            description: "APT-related discussions",
-            tags: ["APT"],
-            created: "2025-10-10",
-          },
-        ],
-        industries_targeted: [],
-        targeted_countries: [],
-      },
-      results: {
-        virustotal: {
-          malicious: 14,
-          suspicious: 1,
-          harmless: 55,
-          undetected: 28,
-        },
-        alienvault: {
-          data: { count: 1 },
-        },
-      },
-    },
-    ba25573c5629cbc81c717e2810ea5afc: {
-      value: "ba25573c5629cbc81c717e2810ea5afc",
-      type: "md5",
-      scoring: {
-        current_score: 9.31,
-        base_score: 9.31081081081081,
-        hours_since_seen: 7.65,
-        risk_level: "CRITICAL",
-      },
-      threat_intel: {
-        apt_groups: ["Water Gamayun"],
-        malware_families: ["Darkwisp", "Rhadamanthys", "Encrypthub", "Silentprism"],
-        campaigns: [
-          {
-            name: "Water APT Multi-Stage Attack Uncovered",
-            description: "RAR payload disguised as PDF with MSC EvilTwin exploit",
-            tags: ["cve-2025-26633", "silentprism", "obfuscation"],
-            created: "2025-11-26T00:43:16",
-          },
-        ],
-        industries_targeted: ["Government", "Technology"],
-        targeted_countries: [["Russian Federation"]],
-      },
-      results: {
-        virustotal: {
-          sha1: "8645a75947729d80223557409ae6ae4703429b1b",
-          sha256: "8fdd2e21665d2e93fd2090a860a67ed1f2572fb5b94d0cf7ea6bc699f05e17c2",
-          md5: "ba25573c5629cbc81c717e2810ea5afc",
-          malicious: 22,
-          suspicious: 0,
-          harmless: 0,
-          type: "RAR",
-          names: ["Hiring_assistant.pdf.rar"],
-        },
-        alienvault: {
-          data: { count: 4 },
-        },
-      },
-    },
-    "admin.zscloud.net": {
-      value: "admin.zscloud.net",
-      type: "domain",
-      scoring: {
-        current_score: 0,
-        base_score: 0,
-        risk_level: "INFORMATIONAL",
-      },
-      threat_intel: {
-        apt_groups: [],
-        malware_families: [],
-        campaigns: [],
-        industries_targeted: [],
-        targeted_countries: [],
-      },
-      results: {
-        virustotal: {
-          malicious: 0,
-          suspicious: 0,
-          harmless: 63,
-          registrar: "MarkMonitor Inc.",
-          expiration_date: 1779907223,
-        },
-        alienvault: {
-          data: { count: 0 },
-        },
-      },
-    },
-  }
-
-  return iocs.map((ioc) => enrichmentMap[ioc.value] || ioc)
 }
